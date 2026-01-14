@@ -1,0 +1,35 @@
+name: Build WDA IPA
+
+on:
+  workflow_dispatch: # 讓你手動點擊按鈕觸發編譯
+
+jobs:
+  build:
+    runs-on: macos-14 # 使用 GitHub 提供的最新 macOS 伺服器
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app # 使用支援 iOS 18 的 Xcode 版本
+
+      - name: Build WebDriverAgentRunner
+        run: |
+          mkdir -p build
+          xcodebuild build-for-testing \
+            -project WebDriverAgent.xcodeproj \
+            -scheme WebDriverAgentRunner \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build
+            
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app Payload/
+          zip -r WebDriverAgentRunner.ipa Payload
+          
+      - name: Upload Artifact
+        uses: actions/actions-upload@v4
+        with:
+          name: WebDriverAgentRunner-IPA
+          path: WebDriverAgentRunner.ipa
